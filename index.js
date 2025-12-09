@@ -4,6 +4,9 @@ import fs from 'fs';
 import path from 'path';
 
 dotenv.config();
+console.log('DEBUG DISCORD_TOKEN EXISTS?', !!process.env.DISCORD_TOKEN);
+console.log('DEBUG DISCORD_TOKEN FIRST 10:', String(process.env.DISCORD_TOKEN || '').slice(0, 10));
+
 
 const {
   Client,
