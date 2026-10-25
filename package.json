@@ -1,0 +1,44 @@
+{
+  "name": "discord-bot",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Modular bilingual Discord bot, dashboard, and configuration API",
+  "main": "apps/bot/src/index.js",
+  "engines": {
+    "node": ">=22.22.2"
+  },
+  "scripts": {
+    "start": "node apps/bot/src/index.js",
+    "start:legacy": "node index.js",
+    "start:bot": "node apps/bot/src/index.js",
+    "start:api": "node apps/api/src/index.js",
+    "dev:web": "next dev apps/web",
+    "build:web": "next build apps/web",
+    "start:web": "next start apps/web",
+    "test": "node --test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@distube/ytdl-core": "^5.0.1",
+    "@discord-player/extractor": "^4.5.1",
+    "connect-mongo": "^5.1.0",
+    "discord.js": "^14.23.2",
+    "discord-player": "^6.7.1",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "express-session": "^1.18.1",
+    "helmet": "^8.0.0",
+    "mongoose": "^8.9.5",
+    "next": "^16.4.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^4.6.7"
+  },
+  "overrides": {
+    "file-type": "^21.3.1"
+  }
+}

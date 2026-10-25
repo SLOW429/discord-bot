@@ -1,0 +1,28 @@
+.main {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: radial-gradient(circle at top right, #202b58, #0b1020 55%);
+}
+.card {
+  width: min(640px, 100%);
+  padding: 48px;
+  border: 1px solid #2d3655;
+  border-radius: 20px;
+  background: #11182b;
+  box-shadow: 0 24px 80px #0005;
+}
+.brand { color: #8ea2ff; font-weight: 700; letter-spacing: .18em; }
+.card h1 { font-size: clamp(2rem, 6vw, 3.5rem); line-height: 1.08; }
+.card p { color: #b7bfd4; line-height: 1.6; }
+.button {
+  display: inline-block;
+  margin-top: 18px;
+  padding: 13px 20px;
+  border-radius: 10px;
+  background: #5865f2;
+  color: white;
+  font-weight: 700;
+  text-decoration: none;
+}
