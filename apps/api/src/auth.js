@@ -1,4 +1,4 @@
-import { randomBytes, timingSafeEqual } from 'node:crypto';
+﻿import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { Router } from 'express';
 import { env } from './config.js';
 
@@ -87,3 +87,4 @@ router.post('/logout', (req, res, next) => {
 });
 
 export { router as authRouter, userCanManageGuild };
+

@@ -2,14 +2,13 @@
   "name": "discord-bot",
   "version": "1.0.0",
   "type": "module",
-  "description": "Modular bilingual Discord bot, dashboard, and configuration API",
-  "main": "apps/bot/src/index.js",
+  "description": "",
+  "main": "index.js",
   "engines": {
     "node": ">=22.22.2"
   },
   "scripts": {
-    "start": "node apps/bot/src/index.js",
-    "start:legacy": "node index.js",
+    "start": "node index.js",
     "start:bot": "node apps/bot/src/index.js",
     "start:api": "node apps/api/src/index.js",
     "dev:web": "next dev apps/web",

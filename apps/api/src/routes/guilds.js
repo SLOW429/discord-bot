@@ -1,4 +1,4 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import mongoose from 'mongoose';
 import { z } from 'zod';
 import { authenticated } from '../middleware/authenticated.js';
@@ -147,3 +147,4 @@ router.patch('/:guildId/config', requireGuildAccess, async (req, res, next) => {
 });
 
 export default router;
+
