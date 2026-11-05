@@ -8,6 +8,6 @@ module.exports = {
     await i.deferReply({ flags: 64 });
     // true = تجاهل الرسائل الأقدم من 14 يوماً (قيد من ديسكورد)
     const deleted = await i.channel.bulkDelete(i.options.getInteger('amount'), true);
-    await i.editReply(`🧹 تم حذف ${deleted.size} رسالة.`);
+    await i.editReply(`تم حذف ${deleted.size} رسالة.`);
   }
 };

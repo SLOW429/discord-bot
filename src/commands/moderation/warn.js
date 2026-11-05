@@ -12,8 +12,10 @@ module.exports = {
     const reason = i.options.getString('reason');
     await Warn.create({ guildId: i.guildId, userId: user.id, moderatorId: i.user.id, reason });
     const count = await Warn.countDocuments({ guildId: i.guildId, userId: user.id });
-    user.send(`⚠️ تلقيت تحذيراً في **${i.guild.name}**: ${reason}`).catch(() => {}); // قد تكون الرسائل الخاصة مغلقة
-    await i.reply(`⚠️ تم تحذير **${user.tag}** (مجموع التحذيرات: ${count}) — ${reason}`);
+    user.send(`تلقيت تحذيراً في **${i.guild.name}**: ${reason}`).catch(error => {
+      console.warn(`[warn] Could not DM ${user.id}:`, error.message);
+    });
+    await i.reply(`تم تحذير **${user.tag}** (مجموع التحذيرات: ${count}) — ${reason}`);
     modLog(i.guild, `Warn #${count}`, user, i.user, reason);
   }
 };

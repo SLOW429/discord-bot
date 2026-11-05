@@ -11,5 +11,5 @@ module.exports = function loadCommands(client) {
       client.commands.set(cmd.data.name, cmd);
     }
   }
-  console.log(`📦 Loaded ${client.commands.size} commands`);
+  console.log(`Loaded ${client.commands.size} commands`);
 };

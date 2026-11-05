@@ -7,6 +7,6 @@ module.exports = {
   async execute(i) {
     const user = i.options.getUser('user') || i.user;
     const doc = await getUser(i.guildId, user.id);
-    await i.reply(`💰 رصيد **${user.username}**: **${doc.balance}** عملة`);
+    await i.reply(`رصيد **${user.username}**: المحفظة **${doc.balance}**، البنك **${doc.bank || 0}** عملة`);
   }
 };

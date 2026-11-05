@@ -5,7 +5,11 @@ const userSchema = new Schema({
   guildId: { type: String, required: true },
   userId: { type: String, required: true },
   balance: { type: Number, default: 0 },
-  lastDaily: Date
+  bank: { type: Number, default: 0 },
+  lastDaily: Date,
+  lastWork: Date,
+  xp: { type: Number, default: 0 },
+  level: { type: Number, default: 0 }
 });
 userSchema.index({ guildId: 1, userId: 1 }, { unique: true });
 userSchema.index({ guildId: 1, balance: -1 });

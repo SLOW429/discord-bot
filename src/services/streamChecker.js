@@ -23,7 +23,7 @@ async function notify(client, g, s, res) {
 
   const embed = new EmbedBuilder().setColor(meta.color)
     .setTitle(res.title || `${s.username} بث مباشر الآن`).setURL(res.url)
-    .setDescription(`🔴 **${s.username}** يبث الآن على **${meta.name}**\n[اضغط للمشاهدة](${res.url})`)
+    .setDescription(`**${s.username}** يبث الآن على **${meta.name}**\n[اضغط للمشاهدة](${res.url})`)
     .setTimestamp();
   if (res.thumbnail) embed.setImage(`${res.thumbnail}${res.thumbnail.includes('?') ? '&' : '?'}t=${Date.now()}`); // كسر الكاش
 
@@ -68,7 +68,7 @@ async function runCheck(client) {
 function startStreamChecker(client) {
   runCheck(client);
   setInterval(() => runCheck(client), INTERVAL);
-  console.log('📡 Stream checker started');
+  console.log('Stream checker started');
 }
 
 module.exports = { startStreamChecker };

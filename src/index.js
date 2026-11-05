@@ -6,17 +6,26 @@ const loadEvents = require('./handlers/eventHandler');
 const setupMusic = require('./music/distube');
 const startDashboard = require('./dashboard/server');
 
-// منع سقوط العملية بسبب خطأ غير متوقع
-process.on('unhandledRejection', err => console.error('Unhandled rejection:', err));
-process.on('uncaughtException', err => console.error('Uncaught exception:', err));
-
 (async () => {
+  const required = ['DISCORD_TOKEN', 'MONGODB_URI', 'SESSION_SECRET', 'BASE_URL', 'CLIENT_ID', 'CLIENT_SECRET'];
+  const missing = required.filter(name => !process.env[name]);
+  if (missing.length) throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  if (process.env.SESSION_SECRET.length < 32)
+    throw new Error('SESSION_SECRET must contain at least 32 characters');
+
   // 1) قاعدة البيانات
   await connectDB();
 
-  // 2) البوت (لا نحتاج MessageContent ولا GuildMembers = لا حاجة لتفعيل Privileged Intents)
+  // MessageContent and GuildMembers must also be enabled in the Discord Developer Portal.
   const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildVoiceStates]
+    intents: [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.MessageContent,
+      GatewayIntentBits.GuildMembers,
+      GatewayIntentBits.GuildVoiceStates,
+      GatewayIntentBits.GuildModeration
+    ]
   });
   client.commands = new Collection();
   loadCommands(client);

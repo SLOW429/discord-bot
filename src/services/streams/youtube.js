@@ -2,9 +2,10 @@
 const API = 'https://www.googleapis.com/youtube/v3';
 
 async function api(path, params) {
+  if (!process.env.YOUTUBE_API_KEY) throw new Error('YOUTUBE_API_KEY is not configured');
   const url = new URL(`${API}/${path}`);
   url.search = new URLSearchParams({ ...params, key: process.env.YOUTUBE_API_KEY });
-  const r = await fetch(url);
+  const r = await fetch(url, { signal: AbortSignal.timeout(10_000) });
   if (!r.ok) throw new Error(`YouTube API ${r.status}`);
   return r.json();
 }
@@ -18,11 +19,11 @@ module.exports = async function checkYouTube(username, entry) {
   }
   // قائمة الرفع الخاصة بالقناة = "UU" + باقي المعرّف
   const pl = await api('playlistItems', { part: 'contentDetails', playlistId: 'UU' + channelId.slice(2), maxResults: 5 });
-  const ids = pl.items.map(i => i.contentDetails.videoId).join(',');
+  const ids = (pl.items || []).map(i => i.contentDetails.videoId).join(',');
   if (!ids) return { isLive: false, externalId: channelId };
 
   const videos = await api('videos', { part: 'snippet', id: ids });
-  const live = videos.items.find(v => v.snippet.liveBroadcastContent === 'live');
+  const live = (videos.items || []).find(v => v.snippet.liveBroadcastContent === 'live');
   if (!live) return { isLive: false, externalId: channelId };
   const th = live.snippet.thumbnails;
   return {

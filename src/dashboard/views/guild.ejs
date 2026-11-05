@@ -19,9 +19,15 @@
 <div class="layout">
   <aside class="side">
     <button type="button" class="tab" data-tab="moderation">🛡️ الإدارة</button>
+    <button type="button" class="tab" data-tab="security">🔒 الأمان</button>
+    <button type="button" class="tab" data-tab="tickets">🎫 التذاكر</button>
+    <button type="button" class="tab" data-tab="welcome">👋 الترحيب والمغادرة</button>
+    <button type="button" class="tab" data-tab="music">🎵 الموسيقى</button>
     <button type="button" class="tab" data-tab="stream">📡 إشعارات البث</button>
     <button type="button" class="tab" data-tab="commands">🧩 الأوامر</button>
     <button type="button" class="tab" data-tab="streamers">🎥 الحسابات المتابَعة</button>
+    <button type="button" class="tab" data-tab="custom">🧩 الأوامر المخصصة</button>
+    <button type="button" class="tab" data-tab="analytics">📊 التحليلات</button>
   </aside>
 
   <div>
@@ -38,6 +44,117 @@
           <label class="switch"><input type="checkbox" name="antiSpamEnabled" <%= s.antiSpam.enabled ? 'checked' : '' %>><i></i></label></div>
         <div class="field" style="margin-top:14px"><label>عدد الرسائل المسموح خلال <%= s.antiSpam.intervalSec %> ثواني</label>
           <input type="number" name="antiSpamMax" min="3" max="20" value="<%= s.antiSpam.maxMessages %>"></div>
+        <h3>إجراء إداري مباشر</h3>
+        <div class="split">
+          <div class="field"><label for="mod-action">الإجراء</label>
+            <select id="mod-action">
+              <option value="warn">تحذير</option><option value="timeout">كتم مؤقت</option>
+              <option value="kick">طرد</option><option value="ban">حظر</option>
+            </select></div>
+          <div class="field"><label for="mod-user">معرّف العضو</label><input id="mod-user" inputmode="numeric" maxlength="20" placeholder="Discord user ID"></div>
+        </div>
+        <div class="split">
+          <div class="field"><label for="mod-minutes">مدة الكتم بالدقائق (0 لإلغاءه)</label><input id="mod-minutes" type="number" min="0" max="40320" value="10"></div>
+          <div class="field"><label for="mod-reason">السبب</label><input id="mod-reason" type="text" maxlength="500" placeholder="سبب الإجراء"></div>
+        </div>
+        <button type="button" class="btn danger" id="mod-submit">تنفيذ الإجراء</button>
+        <p id="mod-result" class="muted" role="status"></p>
+        <div class="row-sw"><div><b>Anti-Raid</b><br><span class="cmddesc">كتم مؤقت للمنضمين عند رصد موجة انضمام سريعة.</span></div>
+          <label class="switch"><input type="checkbox" name="antiRaidEnabled" <%= s.antiRaid.enabled ? 'checked' : '' %>><i></i></label></div>
+        <div class="split">
+          <div class="field"><label>عدد الانضمامات</label><input type="number" name="raidThreshold" min="3" max="50" value="<%= s.antiRaid.joinThreshold %>"></div>
+          <div class="field"><label>خلال ثوانٍ</label><input type="number" name="raidWindow" min="3" max="60" value="<%= s.antiRaid.windowSec %>"></div>
+        </div>
+        <div class="field"><label>مدة الكتم بالدقائق</label><input type="number" name="raidTimeout" min="1" max="40320" value="<%= s.antiRaid.timeoutMinutes %>"></div>
+      </section>
+
+      <section class="panel" id="p-security">
+        <h2>🔒 حماية السيرفر</h2><p class="sub">قواعد أساسية للرسائل ورصد إجراءات الحذف والحظر الجماعي.</p>
+        <div class="row-sw"><div><b>حظر الروابط</b><br><span class="cmddesc">حذف الرسائل التي تحتوي روابط وإيقاف العضو مؤقتاً.</span></div>
+          <label class="switch"><input type="checkbox" name="antiLinksEnabled" <%= s.security.antiLinks ? 'checked' : '' %>><i></i></label></div>
+        <div class="row-sw"><div><b>حماية الإشارات الجماعية</b><br><span class="cmddesc">حذف الرسائل التي تتجاوز حد الإشارات المحدد.</span></div>
+          <label class="switch"><input type="checkbox" name="antiMassMentionEnabled" <%= s.security.antiMassMention ? 'checked' : '' %>><i></i></label></div>
+        <div class="field"><label>حد الإشارات في الرسالة</label>
+          <input type="number" name="mentionThreshold" min="2" max="20" value="<%= s.security.mentionThreshold %>"></div>
+        <div class="row-sw"><div><b>رصد الحذف والحظر الجماعي</b><br><span class="cmddesc">يراقب سجل تدقيق Discord ويوقف المنفذ مؤقتاً عند تجاوز الحد.</span></div>
+          <label class="switch"><input type="checkbox" name="antiNukeEnabled" <%= s.security.antiNuke ? 'checked' : '' %>><i></i></label></div>
+        <div class="split">
+          <div class="field"><label>عدد الإجراءات</label><input type="number" name="nukeThreshold" min="2" max="10" value="<%= s.security.nukeThreshold %>"></div>
+          <div class="field"><label>خلال ثوانٍ</label><input type="number" name="nukeWindowSec" min="3" max="60" value="<%= s.security.nukeWindowSec %>"></div>
+        </div>
+        <small>استثنِ أصحاب Administrator ومالك السيرفر. تتطلب الميزة صلاحية View Audit Log للبوت.</small>
+      </section>
+
+      <section class="panel" id="p-tickets">
+        <h2>🎫 الدعم والتذاكر</h2><p class="sub">إعداد قناة اللوحة، فئة التذاكر، فريق الدعم، وأرشيف النصوص.</p>
+        <div class="field"><label>قناة لوحة التذاكر</label>
+          <select name="ticketPanelChannelId"><option value="">— اختر قناة —</option>
+            <% channels.forEach(c => { %><option value="<%= c.id %>" <%= s.ticketing.panelChannelId === c.id ? 'selected' : '' %>>#<%= c.name %></option><% }) %>
+          </select></div>
+        <div class="field"><label>فئة قنوات التذاكر</label>
+          <select name="ticketCategoryId"><option value="">— بدون —</option>
+            <% categories.forEach(c => { %><option value="<%= c.id %>" <%= s.ticketing.categoryId === c.id ? 'selected' : '' %>><%= c.name %></option><% }) %>
+          </select></div>
+        <div class="field"><label>رتبة فريق الدعم</label>
+          <select name="ticketStaffRoleId"><option value="">— اختر رتبة —</option>
+            <% roles.forEach(r => { %><option value="<%= r.id %>" <%= s.ticketing.staffRoleId === r.id ? 'selected' : '' %>>@<%= r.name %></option><% }) %>
+          </select></div>
+        <div class="field"><label>قناة أرشيف التذاكر</label>
+          <select name="ticketLogChannelId"><option value="">— اختر قناة —</option>
+            <% channels.forEach(c => { %><option value="<%= c.id %>" <%= s.ticketing.logChannelId === c.id ? 'selected' : '' %>>#<%= c.name %></option><% }) %>
+          </select></div>
+        <p><button type="button" class="btn ghost" id="ticket-panel-publish">نشر لوحة التذاكر</button></p>
+        <p id="ticket-result" class="muted" role="status"></p>
+      </section>
+
+      <section class="panel" id="p-welcome">
+        <h2>👋 الترحيب والمغادرة</h2><p class="sub">رسائل دخول ومغادرة مضمّنة، صورة ترحيب اختيارية، ورتبة تلقائية.</p>
+        <div class="row-sw"><div><b>تفعيل الترحيب</b></div>
+          <label class="switch"><input type="checkbox" name="welcomeEnabled" <%= s.welcome.enabled ? 'checked' : '' %>><i></i></label></div>
+        <div class="row-sw"><div><b>تفعيل رسالة المغادرة</b></div>
+          <label class="switch"><input type="checkbox" name="leaveEnabled" <%= s.welcome.leaveEnabled ? 'checked' : '' %>><i></i></label></div>
+        <div class="field"><label>قناة الترحيب والمغادرة</label>
+          <select name="welcomeChannelId"><option value="">— بدون —</option>
+            <% channels.forEach(c => { %><option value="<%= c.id %>" <%= s.welcome.channelId === c.id ? 'selected' : '' %>>#<%= c.name %></option><% }) %>
+          </select></div>
+        <div class="field"><label>رسالة الترحيب</label>
+          <input type="text" name="welcomeMessage" maxlength="500" value="<%= s.welcome.message %>">
+          <small>المتغيرات: <code>{user}</code> و<code>{server}</code> و<code>{memberCount}</code>.</small></div>
+        <div class="field"><label>رسالة المغادرة</label>
+          <input type="text" name="leaveMessage" maxlength="500" value="<%= s.welcome.leaveMessage %>"></div>
+        <div class="field"><label>رابط صورة الترحيب (اختياري، HTTPS)</label>
+          <input type="text" name="welcomeImageUrl" maxlength="500" value="<%= s.welcome.imageUrl || '' %>" placeholder="https://example.com/welcome.png"></div>
+        <div class="field"><label>رتبة تلقائية للعضو الجديد</label>
+          <select name="autoRoleId"><option value="">— بدون —</option>
+            <% roles.forEach(r => { %><option value="<%= r.id %>" <%= s.welcome.autoRoleId === r.id ? 'selected' : '' %>>@<%= r.name %></option><% }) %>
+          </select><small>يجب أن تكون رتبة البوت أعلى من الرتبة المختارة.</small></div>
+      </section>
+
+      <section class="panel" id="p-music">
+        <h2>🎵 مشغل الموسيقى</h2><p class="sub">تحكم مباشر بقائمة التشغيل النشطة في السيرفر.</p>
+        <div id="music-state" data-state-url="/dashboard/<%= guild.id %>/music/state">
+          <% if (queue) { %>
+            <p><b id="music-title"><%= queue.songs[0].name %></b></p>
+            <p class="muted" id="music-meta"><%= queue.songs.length %> مقطع في القائمة · الصوت <%= queue.volume %>%</p>
+          <% } else { %><p class="empty" id="music-title">لا يوجد تشغيل حالياً.</p><p class="muted" id="music-meta"></p><% } %>
+        </div>
+        <div class="tools music-controls">
+          <button type="button" class="btn ghost sm" data-music-action="pause">⏸ إيقاف مؤقت</button>
+          <button type="button" class="btn ghost sm" data-music-action="resume">▶ استئناف</button>
+          <button type="button" class="btn ghost sm" data-music-action="skip">⏭ تخطّي</button>
+          <button type="button" class="btn danger sm" data-music-action="stop">⏹ إيقاف</button>
+        </div>
+        <div class="field"><label for="music-volume">مستوى الصوت: <span id="volume-label"><%= queue ? queue.volume : 100 %></span>%</label>
+          <input type="range" id="music-volume" min="0" max="100" value="<%= queue ? queue.volume : 100 %>"></div>
+        <div class="field"><label for="music-filter">مؤثر الصوت</label>
+          <select id="music-filter">
+            <option value="off">إيقاف المؤثرات</option><option value="bassboost">Bass Boost</option>
+            <option value="nightcore">Nightcore</option><option value="3d">3D</option>
+            <option value="echo">Echo</option><option value="karaoke">Karaoke</option>
+            <option value="vaporwave">Vaporwave</option>
+          </select></div>
+        <ol id="music-queue" class="music-queue"></ol>
+        <p id="music-error" class="muted" role="status"></p>
       </section>
 
       <section class="panel" id="p-stream">
@@ -72,6 +189,28 @@
       <div class="savebar" id="savebar"><span class="muted">لا تنسَ حفظ التغييرات بعد التعديل</span><button class="btn">💾 حفظ التغييرات</button></div>
     </form>
 
+    <section class="panel" id="p-custom">
+      <h2>🧩 الأوامر المخصصة</h2><p class="sub">تُستدعى بكتابة <code>!اسم_الأمر</code>. حد 50 أمراً.</p>
+      <% if (s.customCommands.length) { %>
+        <table class="tbl"><tr><th>الأمر</th><th>الرد</th><th></th></tr>
+          <% s.customCommands.forEach(command => { %>
+            <tr><td><code>!<%= command.trigger %></code></td><td><%= command.response %></td><td>
+              <form method="post" action="/dashboard/<%= guild.id %>/custom-commands/<%= command._id %>/delete">
+                <input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn danger sm">حذف</button>
+              </form>
+            </td></tr>
+          <% }) %>
+        </table>
+      <% } else { %><p class="empty">لا توجد أوامر مخصصة.</p><% } %>
+      <form method="post" action="/dashboard/<%= guild.id %>/custom-commands" class="custom-command-form">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div class="field"><label>اسم الأمر (بدون !)</label><input name="trigger" maxlength="32" pattern="[A-Za-z0-9_-]+" required></div>
+        <div class="field"><label>الرد</label><input name="response" maxlength="1000" required>
+          <small>المتغيرات: <code>{user}</code> و<code>{server}</code> و<code>{memberCount}</code>.</small></div>
+        <button class="btn">+ إضافة أمر</button>
+      </form>
+    </section>
+
     <section class="panel" id="p-streamers">
       <h2>🎥 الحسابات المتابَعة</h2><p class="sub">حتى 10 حسابات. يُفحص البث كل دقيقتين.</p>
       <% if (s.streamers.length) { %>
@@ -89,6 +228,15 @@
         <button class="btn">+ إضافة</button>
       </form>
     </section>
+
+    <section class="panel" id="p-analytics">
+      <h2>📊 نشاط السيرفر</h2><p class="sub">إحصاءات مجمّعة لآخر 7 أيام (تُحفظ يومياً لمدة 90 يوماً).</p>
+      <table class="tbl"><tr><th>التاريخ (UTC)</th><th>الرسائل</th><th>أوامر السلاش</th><th>انضمام</th><th>مغادرة</th></tr>
+        <% analytics.forEach(day => { %>
+          <tr><td><%= day.day %></td><td><%= day.messages %></td><td><%= day.commands %></td><td><%= day.joins %></td><td><%= day.leaves %></td></tr>
+        <% }) %>
+      </table>
+    </section>
   </div>
 </div>
 
@@ -99,12 +247,99 @@
     if (!document.getElementById('p-' + name)) name = 'moderation';
     tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === name));
     document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'p-' + name));
-    form.style.display = name === 'streamers' ? 'none' : 'block'; // نموذج الحفظ لا يخص تبويب الحسابات
+    form.style.display = ['streamers', 'custom', 'analytics'].includes(name) ? 'none' : 'block';
     history.replaceState(null, '', '#' + name);
   }
   tabs.forEach(t => t.addEventListener('click', () => show(t.dataset.tab)));
   document.querySelectorAll('[data-all]').forEach(b => b.addEventListener('click', () =>
     document.querySelectorAll('input[name=enabled]').forEach(i => i.checked = b.dataset.all === '1')));
+  const musicState = document.getElementById('music-state');
+  const musicError = document.getElementById('music-error');
+  const musicQueue = document.getElementById('music-queue');
+  const volume = document.getElementById('music-volume');
+  const musicFilter = document.getElementById('music-filter');
+  const csrf = form.querySelector('[name=_csrf]').value;
+  document.getElementById('ticket-panel-publish').addEventListener('click', async () => {
+    const result = document.getElementById('ticket-result');
+    result.textContent = '';
+    try {
+      const response = await fetch('/dashboard/<%= guild.id %>/tickets/panel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+        body: new URLSearchParams({ _csrf: csrf })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || 'تعذر نشر اللوحة.');
+      result.textContent = payload.message;
+    } catch (error) {
+      result.textContent = error.message;
+    }
+  });
+  document.getElementById('mod-submit').addEventListener('click', async () => {
+    const result = document.getElementById('mod-result');
+    result.textContent = '';
+    try {
+      const response = await fetch('/dashboard/<%= guild.id %>/moderation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+        body: new URLSearchParams({
+          _csrf: csrf,
+          action: document.getElementById('mod-action').value,
+          userId: document.getElementById('mod-user').value,
+          minutes: document.getElementById('mod-minutes').value,
+          reason: document.getElementById('mod-reason').value
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || 'تعذر تنفيذ الإجراء.');
+      result.textContent = payload.message;
+    } catch (error) {
+      result.textContent = error.message;
+    }
+  });
+  async function refreshMusic() {
+    try {
+      const response = await fetch(musicState.dataset.stateUrl, { headers: { Accept: 'application/json' } });
+      if (!response.ok) throw new Error('تعذر تحديث حالة المشغل.');
+      const state = await response.json();
+      document.getElementById('music-title').textContent = state.playing ? state.songs[0].name : 'لا يوجد تشغيل حالياً.';
+      document.getElementById('music-meta').textContent = state.playing
+        ? `${state.songs.length} مقطع في القائمة · الصوت ${state.volume}%${state.paused ? ' · متوقف مؤقتاً' : ''}`
+        : '';
+      musicQueue.replaceChildren(...state.songs.slice(1).map(song => {
+        const item = document.createElement('li');
+        item.textContent = `${song.name} · ${song.duration}`;
+        return item;
+      }));
+      if (state.playing) volume.value = state.volume;
+      if (state.playing && state.filters?.length) musicFilter.value = state.filters[0];
+      else musicFilter.value = 'off';
+      document.getElementById('volume-label').textContent = volume.value;
+    } catch (error) {
+      musicError.textContent = error.message;
+    }
+  }
+  async function musicAction(action, data = {}) {
+    musicError.textContent = '';
+    try {
+      const response = await fetch(`/dashboard/<%= guild.id %>/music/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ _csrf: csrf, ...data })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'تعذر تنفيذ الأمر.');
+      await refreshMusic();
+    } catch (error) {
+      musicError.textContent = error.message;
+    }
+  }
+  document.querySelectorAll('[data-music-action]').forEach(button =>
+    button.addEventListener('click', () => musicAction(button.dataset.musicAction)));
+  volume.addEventListener('change', () => musicAction('volume', { volume: volume.value }));
+  musicFilter.addEventListener('change', () => musicAction('filter', { filter: musicFilter.value }));
+  refreshMusic();
+  setInterval(refreshMusic, 10_000);
   show(location.hash.slice(1) || 'moderation');
 </script>
 <%- include('partials/footer') %>

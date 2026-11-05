@@ -14,9 +14,9 @@ module.exports = {
     const reason = i.options.getString('reason') || 'غير محدد';
     const member = await i.guild.members.fetch(user.id).catch(() => null);
     if (!member || !member.moderatable || member.roles.highest.position >= i.member.roles.highest.position)
-      return i.reply({ content: '❌ لا يمكن تطبيق الكتم على هذا العضو.', flags: 64 });
+      return i.reply({ content: 'لا يمكن تطبيق الكتم على هذا العضو.', flags: 64 });
     await member.timeout(minutes ? minutes * 60_000 : null, `${i.user.tag}: ${reason}`);
-    await i.reply(minutes ? `🔇 تم كتم **${user.tag}** لمدة ${minutes} دقيقة.` : `🔊 تم رفع الكتم عن **${user.tag}**.`);
+    await i.reply(minutes ? `تم كتم **${user.tag}** لمدة ${minutes} دقيقة.` : `تم رفع الكتم عن **${user.tag}**.`);
     modLog(i.guild, minutes ? `Timeout (${minutes}m)` : 'Untimeout', user, i.user, reason);
   }
 };

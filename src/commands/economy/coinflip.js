@@ -10,10 +10,10 @@ module.exports = {
     const bet = i.options.getInteger('bet');
     const side = i.options.getString('side');
     const paid = await spend(i.guildId, i.user.id, bet); // يفشل تلقائياً إذا الرصيد غير كافٍ
-    if (!paid) return i.reply({ content: '❌ رصيدك لا يكفي.', flags: 64 });
+    if (!paid) return i.reply({ content: 'رصيدك لا يكفي.', flags: 64 });
     const result = Math.random() < 0.5 ? 'heads' : 'tails';
     const win = result === side;
     if (win) await add(i.guildId, i.user.id, bet * 2);
-    await i.reply(`🪙 النتيجة: **${result === 'heads' ? 'صورة' : 'كتابة'}** — ${win ? `🎉 ربحت ${bet}!` : `😢 خسرت ${bet}.`}`);
+    await i.reply(`النتيجة: **${result === 'heads' ? 'صورة' : 'كتابة'}** — ${win ? `ربحت ${bet}!` : `خسرت ${bet}.`}`);
   }
 };

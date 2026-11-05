@@ -12,9 +12,9 @@ module.exports = {
     const member = await i.guild.members.fetch(user.id).catch(() => null);
     // تحقق من الرتب: لا نحظر من رتبته أعلى منا
     if (member && (!member.bannable || member.roles.highest.position >= i.member.roles.highest.position))
-      return i.reply({ content: '❌ لا يمكن حظر هذا العضو (رتبته أعلى أو مساوية).', flags: 64 });
+      return i.reply({ content: 'لا يمكن حظر هذا العضو (رتبته أعلى أو مساوية).', flags: 64 });
     await i.guild.members.ban(user, { reason: `${i.user.tag}: ${reason}` });
-    await i.reply(`🔨 تم حظر **${user.tag}** — ${reason}`);
+    await i.reply(`تم حظر **${user.tag}** — ${reason}`);
     modLog(i.guild, 'Ban', user, i.user, reason);
   }
 };

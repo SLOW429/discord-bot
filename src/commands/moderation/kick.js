@@ -11,9 +11,9 @@ module.exports = {
     const reason = i.options.getString('reason') || 'غير محدد';
     const member = await i.guild.members.fetch(user.id).catch(() => null);
     if (!member || !member.kickable || member.roles.highest.position >= i.member.roles.highest.position)
-      return i.reply({ content: '❌ لا يمكن طرد هذا العضو.', flags: 64 });
+      return i.reply({ content: 'لا يمكن طرد هذا العضو.', flags: 64 });
     await member.kick(`${i.user.tag}: ${reason}`);
-    await i.reply(`👢 تم طرد **${user.tag}** — ${reason}`);
+    await i.reply(`تم طرد **${user.tag}** — ${reason}`);
     modLog(i.guild, 'Kick', user, i.user, reason);
   }
 };
