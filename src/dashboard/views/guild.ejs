@@ -1,0 +1,57 @@
+<%- include('partials/header') %>
+<h1>⚙️ <%= guild.name %></h1>
+<% if (saved) { %><div class="ok">✅ تم الحفظ</div><% } %>
+
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+
+  <h2>🛡️ الإدارة</h2>
+  <label>قناة سجل الإدارة</label>
+  <select name="modLogChannelId"><option value="">— بدون —</option>
+    <% channels.forEach(c => { %><option value="<%= c.id %>" <%= s.modLogChannelId === c.id ? 'selected' : '' %>>#<%= c.name %></option><% }) %>
+  </select>
+  <label><input type="checkbox" name="antiSpamEnabled" <%= s.antiSpam.enabled ? 'checked' : '' %>> تفعيل Anti-Spam</label>
+  <label>عدد الرسائل المسموح خلال <%= s.antiSpam.intervalSec %> ثواني</label>
+  <input type="number" name="antiSpamMax" min="3" max="20" value="<%= s.antiSpam.maxMessages %>">
+
+  <h2>📡 إشعارات البث</h2>
+  <label>قناة الإشعارات</label>
+  <select name="streamChannelId"><option value="">— بدون —</option>
+    <% channels.forEach(c => { %><option value="<%= c.id %>" <%= s.stream.channelId === c.id ? 'selected' : '' %>>#<%= c.name %></option><% }) %>
+  </select>
+  <label>الرتبة التي يتم منشنها</label>
+  <select name="mentionRoleId"><option value="">— بدون —</option>
+    <% roles.forEach(r => { %><option value="<%= r.id %>" <%= s.stream.mentionRoleId === r.id ? 'selected' : '' %>>@<%= r.name %></option><% }) %>
+  </select>
+  <label>نص الإشعار ({streamer} و {platform})</label>
+  <input type="text" name="streamMessage" maxlength="300" value="<%= s.stream.message %>">
+
+  <h2>🧩 الأوامر المفعّلة</h2>
+  <div class="cmds">
+    <% commands.forEach(c => { %>
+      <label><input type="checkbox" name="enabled" value="<%= c.name %>" <%= s.disabledCommands.includes(c.name) ? '' : 'checked' %>>
+        /<%= c.name %> <small class="muted">(<%= c.category %>)</small></label>
+    <% }) %>
+  </div>
+  <button class="btn">حفظ</button>
+</form>
+
+<div class="card">
+  <h2>🎥 الحسابات المتابَعة</h2>
+  <table>
+    <% s.streamers.forEach(st => { %>
+      <tr>
+        <td><%= st.platform %></td><td><%= st.username %></td><td><%= st.isLive ? '🔴 مباشر' : '⚫' %></td>
+        <td><form method="post" action="/dashboard/<%= guild.id %>/streamers/<%= st._id %>/delete">
+          <input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn danger">حذف</button></form></td>
+      </tr>
+    <% }) %>
+  </table>
+  <form method="post" action="/dashboard/<%= guild.id %>/streamers" class="row">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <select name="platform"><% platforms.forEach(p => { %><option value="<%= p %>"><%= p %></option><% }) %></select>
+    <input name="username" placeholder="اسم الحساب (يوتيوب: @handle)" required>
+    <button class="btn">إضافة</button>
+  </form>
+</div>
+<%- include('partials/footer') %>

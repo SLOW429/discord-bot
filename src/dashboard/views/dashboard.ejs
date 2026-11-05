@@ -1,0 +1,13 @@
+<%- include('partials/header') %>
+<h1>اختر السيرفر</h1>
+<div class="grid">
+  <% guilds.forEach(g => { %>
+    <div class="card">
+      <h3><%= g.name %></h3>
+      <% if (g.botIn) { %><a class="btn" href="/dashboard/<%= g.id %>">إدارة</a>
+      <% } else { %><a class="btn alt" href="<%= g.invite %>" target="_blank" rel="noopener">إضافة البوت</a><% } %>
+    </div>
+  <% }) %>
+  <% if (!guilds.length) { %><p>لا تملك سيرفرات تستطيع إدارتها.</p><% } %>
+</div>
+<%- include('partials/footer') %>
