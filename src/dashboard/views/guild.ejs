@@ -1,57 +1,110 @@
 <%- include('partials/header') %>
-<h1>⚙️ <%= guild.name %></h1>
-<% if (saved) { %><div class="ok">✅ تم الحفظ</div><% } %>
+<% const catNames = { moderation: '🛡️ الإدارة', economy: '💰 الاقتصاد والألعاب', music: '🎵 الموسيقى' };
+   const groups = {}; commands.forEach(c => (groups[c.category] ||= []).push(c));
+   const enabledCount = commands.filter(c => !s.disabledCommands.includes(c.name)).length; %>
+<% if (saved) { %><div class="toast">✅ تم حفظ التغييرات</div><% } %>
 
-<form method="post" class="card">
-  <input type="hidden" name="_csrf" value="<%= csrf %>">
-
-  <h2>🛡️ الإدارة</h2>
-  <label>قناة سجل الإدارة</label>
-  <select name="modLogChannelId"><option value="">— بدون —</option>
-    <% channels.forEach(c => { %><option value="<%= c.id %>" <%= s.modLogChannelId === c.id ? 'selected' : '' %>>#<%= c.name %></option><% }) %>
-  </select>
-  <label><input type="checkbox" name="antiSpamEnabled" <%= s.antiSpam.enabled ? 'checked' : '' %>> تفعيل Anti-Spam</label>
-  <label>عدد الرسائل المسموح خلال <%= s.antiSpam.intervalSec %> ثواني</label>
-  <input type="number" name="antiSpamMax" min="3" max="20" value="<%= s.antiSpam.maxMessages %>">
-
-  <h2>📡 إشعارات البث</h2>
-  <label>قناة الإشعارات</label>
-  <select name="streamChannelId"><option value="">— بدون —</option>
-    <% channels.forEach(c => { %><option value="<%= c.id %>" <%= s.stream.channelId === c.id ? 'selected' : '' %>>#<%= c.name %></option><% }) %>
-  </select>
-  <label>الرتبة التي يتم منشنها</label>
-  <select name="mentionRoleId"><option value="">— بدون —</option>
-    <% roles.forEach(r => { %><option value="<%= r.id %>" <%= s.stream.mentionRoleId === r.id ? 'selected' : '' %>>@<%= r.name %></option><% }) %>
-  </select>
-  <label>نص الإشعار ({streamer} و {platform})</label>
-  <input type="text" name="streamMessage" maxlength="300" value="<%= s.stream.message %>">
-
-  <h2>🧩 الأوامر المفعّلة</h2>
-  <div class="cmds">
-    <% commands.forEach(c => { %>
-      <label><input type="checkbox" name="enabled" value="<%= c.name %>" <%= s.disabledCommands.includes(c.name) ? '' : 'checked' %>>
-        /<%= c.name %> <small class="muted">(<%= c.category %>)</small></label>
-    <% }) %>
-  </div>
-  <button class="btn">حفظ</button>
-</form>
-
-<div class="card">
-  <h2>🎥 الحسابات المتابَعة</h2>
-  <table>
-    <% s.streamers.forEach(st => { %>
-      <tr>
-        <td><%= st.platform %></td><td><%= st.username %></td><td><%= st.isLive ? '🔴 مباشر' : '⚫' %></td>
-        <td><form method="post" action="/dashboard/<%= guild.id %>/streamers/<%= st._id %>/delete">
-          <input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn danger">حذف</button></form></td>
-      </tr>
-    <% }) %>
-  </table>
-  <form method="post" action="/dashboard/<%= guild.id %>/streamers" class="row">
-    <input type="hidden" name="_csrf" value="<%= csrf %>">
-    <select name="platform"><% platforms.forEach(p => { %><option value="<%= p %>"><%= p %></option><% }) %></select>
-    <input name="username" placeholder="اسم الحساب (يوتيوب: @handle)" required>
-    <button class="btn">إضافة</button>
-  </form>
+<div class="ghead">
+  <% if (guild.iconURL()) { %><img class="gicon" alt="" src="<%= guild.iconURL({ size: 128 }) %>"><% } else { %><div class="gicon"><%= guild.name.charAt(0).toUpperCase() %></div><% } %>
+  <div><h1><%= guild.name %></h1><a href="/dashboard">← كل السيرفرات</a></div>
 </div>
+
+<div class="stats">
+  <div class="stat"><b><%= guild.memberCount %></b><span>الأعضاء</span></div>
+  <div class="stat"><b><%= channels.length %></b><span>القنوات النصية</span></div>
+  <div class="stat"><b><%= enabledCount %>/<%= commands.length %></b><span>الأوامر المفعّلة</span></div>
+  <div class="stat"><b><%= s.streamers.length %></b><span>حسابات البث</span></div>
+</div>
+
+<div class="layout">
+  <aside class="side">
+    <button type="button" class="tab" data-tab="moderation">🛡️ الإدارة</button>
+    <button type="button" class="tab" data-tab="stream">📡 إشعارات البث</button>
+    <button type="button" class="tab" data-tab="commands">🧩 الأوامر</button>
+    <button type="button" class="tab" data-tab="streamers">🎥 الحسابات المتابَعة</button>
+  </aside>
+
+  <div>
+    <form id="settings" method="post">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+
+      <section class="panel" id="p-moderation">
+        <h2>🛡️ الإدارة</h2><p class="sub">سجل الإجراءات وحماية السيرفر من السبام.</p>
+        <div class="field"><label>قناة سجل الإدارة</label>
+          <select name="modLogChannelId"><option value="">— بدون —</option>
+            <% channels.forEach(c => { %><option value="<%= c.id %>" <%= s.modLogChannelId === c.id ? 'selected' : '' %>>#<%= c.name %></option><% }) %>
+          </select><small>تُرسل فيها إجراءات الحظ والطرد والكتم والتحذير.</small></div>
+        <div class="row-sw"><div><b>Anti-Spam</b><br><span class="cmddesc">كتم تلقائي لمن يرسل رسائل بسرعة (المشرفون مستثنون)</span></div>
+          <label class="switch"><input type="checkbox" name="antiSpamEnabled" <%= s.antiSpam.enabled ? 'checked' : '' %>><i></i></label></div>
+        <div class="field" style="margin-top:14px"><label>عدد الرسائل المسموح خلال <%= s.antiSpam.intervalSec %> ثواني</label>
+          <input type="number" name="antiSpamMax" min="3" max="20" value="<%= s.antiSpam.maxMessages %>"></div>
+      </section>
+
+      <section class="panel" id="p-stream">
+        <h2>📡 إشعارات البث</h2><p class="sub">أين وكيف تصل إشعارات بدء البث.</p>
+        <div class="split">
+          <div class="field"><label>قناة الإشعارات</label>
+            <select name="streamChannelId"><option value="">— بدون —</option>
+              <% channels.forEach(c => { %><option value="<%= c.id %>" <%= s.stream.channelId === c.id ? 'selected' : '' %>>#<%= c.name %></option><% }) %>
+            </select></div>
+          <div class="field"><label>الرتبة التي يتم منشنها</label>
+            <select name="mentionRoleId"><option value="">— بدون —</option>
+              <% roles.forEach(r => { %><option value="<%= r.id %>" <%= s.stream.mentionRoleId === r.id ? 'selected' : '' %>>@<%= r.name %></option><% }) %>
+            </select></div>
+        </div>
+        <div class="field"><label>نص الإشعار</label>
+          <input type="text" name="streamMessage" maxlength="300" value="<%= s.stream.message %>">
+          <small>المتغيرات المتاحة: <code>{streamer}</code> اسم الحساب، <code>{platform}</code> اسم المنصة.</small></div>
+      </section>
+
+      <section class="panel" id="p-commands">
+        <h2>🧩 الأوامر</h2><p class="sub">فعّل أو عطّل الأوامر داخل هذا السيرفر.</p>
+        <div class="tools"><button type="button" class="btn ghost sm" data-all="1">تفعيل الكل</button><button type="button" class="btn ghost sm" data-all="0">تعطيل الكل</button></div>
+        <% Object.keys(groups).forEach(cat => { %>
+          <div class="cmdgroup"><h4><%= catNames[cat] || cat %></h4>
+            <% groups[cat].forEach(c => { %>
+              <div class="row-sw"><div><span class="cmdname">/<%= c.name %></span><br><span class="cmddesc"><%= c.description || '' %></span></div>
+                <label class="switch"><input type="checkbox" name="enabled" value="<%= c.name %>" <%= s.disabledCommands.includes(c.name) ? '' : 'checked' %>><i></i></label></div>
+            <% }) %></div>
+        <% }) %>
+      </section>
+
+      <div class="savebar" id="savebar"><span class="muted">لا تنسَ حفظ التغييرات بعد التعديل</span><button class="btn">💾 حفظ التغييرات</button></div>
+    </form>
+
+    <section class="panel" id="p-streamers">
+      <h2>🎥 الحسابات المتابَعة</h2><p class="sub">حتى 10 حسابات. يُفحص البث كل دقيقتين.</p>
+      <% if (s.streamers.length) { %>
+      <table class="tbl"><tr><th>المنصة</th><th>الحساب</th><th>الحالة</th><th></th></tr>
+        <% s.streamers.forEach(st => { %>
+          <tr><td><span class="pf <%= st.platform %>"><%= st.platform %></span></td><td><b><%= st.username %></b></td>
+            <td><%= st.isLive ? '' : '' %><span class="<%= st.isLive ? 'live' : 'off' %>"><%= st.isLive ? '🔴 مباشر الآن' : '⚫ غير متصل' %></span></td>
+            <td><form method="post" action="/dashboard/<%= guild.id %>/streamers/<%= st._id %>/delete"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn danger sm">حذف</button></form></td></tr>
+        <% }) %></table>
+      <% } else { %><p class="empty">لم تضف أي حساب بعد.</p><% } %>
+      <form method="post" action="/dashboard/<%= guild.id %>/streamers" class="addrow">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <select name="platform"><% platforms.forEach(p => { %><option value="<%= p %>"><%= p %></option><% }) %></select>
+        <input name="username" placeholder="اسم الحساب (يوتيوب: @handle)" required>
+        <button class="btn">+ إضافة</button>
+      </form>
+    </section>
+  </div>
+</div>
+
+<script>
+  // تبديل التبويبات مع حفظ التبويب الحالي في الرابط (#moderation ...)
+  const tabs = document.querySelectorAll('.tab'), form = document.getElementById('settings');
+  function show(name) {
+    if (!document.getElementById('p-' + name)) name = 'moderation';
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'p-' + name));
+    form.style.display = name === 'streamers' ? 'none' : 'block'; // نموذج الحفظ لا يخص تبويب الحسابات
+    history.replaceState(null, '', '#' + name);
+  }
+  tabs.forEach(t => t.addEventListener('click', () => show(t.dataset.tab)));
+  document.querySelectorAll('[data-all]').forEach(b => b.addEventListener('click', () =>
+    document.querySelectorAll('input[name=enabled]').forEach(i => i.checked = b.dataset.all === '1')));
+  show(location.hash.slice(1) || 'moderation');
+</script>
 <%- include('partials/footer') %>

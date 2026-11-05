@@ -111,7 +111,7 @@ module.exports = function startDashboard(client) {
       guild, s: await getGuild(guild.id), saved: req.query.saved === '1',
       channels: guild.channels.cache.filter(c => c.type === ChannelType.GuildText).map(c => ({ id: c.id, name: c.name })),
       roles: guild.roles.cache.filter(r => r.id !== guild.id && !r.managed).map(r => ({ id: r.id, name: r.name })),
-      commands: [...client.commands.values()].map(c => ({ name: c.data.name, category: c.category })),
+      commands: [...client.commands.values()].map(c => ({ name: c.data.name, category: c.category, description: c.data.description })),
       platforms: PLATFORMS
     });
   });

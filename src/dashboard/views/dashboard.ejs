@@ -1,13 +1,16 @@
 <%- include('partials/header') %>
-<h1>اختر السيرفر</h1>
-<div class="grid">
+<div class="pagehead"><div><h1>اختر السيرفر</h1><span class="muted">السيرفرات التي تملك فيها صلاحية Manage Server</span></div></div>
+<div class="gcards">
   <% guilds.forEach(g => { %>
-    <div class="card">
+    <div class="gcard">
+      <% if (g.icon) { %><img class="gicon" alt="" src="https://cdn.discordapp.com/icons/<%= g.id %>/<%= g.icon %>.png?size=128">
+      <% } else { %><div class="gicon"><%= g.name.charAt(0).toUpperCase() %></div><% } %>
       <h3><%= g.name %></h3>
-      <% if (g.botIn) { %><a class="btn" href="/dashboard/<%= g.id %>">إدارة</a>
-      <% } else { %><a class="btn alt" href="<%= g.invite %>" target="_blank" rel="noopener">إضافة البوت</a><% } %>
+      <span class="badge <%= g.botIn ? 'on' : 'off' %>"><%= g.botIn ? '● البوت موجود' : '○ البوت غير مضاف' %></span><br>
+      <% if (g.botIn) { %><a class="btn sm" href="/dashboard/<%= g.id %>">إدارة السيرفر</a>
+      <% } else { %><a class="btn ghost sm" target="_blank" rel="noopener" href="<%= g.invite %>">إضافة البوت</a><% } %>
     </div>
   <% }) %>
-  <% if (!guilds.length) { %><p>لا تملك سيرفرات تستطيع إدارتها.</p><% } %>
 </div>
+<% if (!guilds.length) { %><p class="empty">لا توجد سيرفرات تستطيع إدارتها.</p><% } %>
 <%- include('partials/footer') %>
