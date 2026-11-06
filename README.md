@@ -106,6 +106,7 @@ lavalink:
 | `BASE_URL` |  | رابط الداشبورد بدون `/` في النهاية |
 | `NODE_ENV` |  | اجعله `production` على الاستضافة |
 | `PORT` |  | لا تحدده على Render، فهو يحدده تلقائياً |
+| `LAVALINK_NODES` | للموسيقى فقط | مصفوفة JSON لعقد Lavalink؛ إذا لم تُضبط، يبدأ البوت والداشبورد مع تعطيل أوامر الموسيقى |
 | `KICK_CLIENT_ID` / `KICK_CLIENT_SECRET` |  | مطلوبان لإشعارات Kick |
 | `YOUTUBE_API_KEY` |  | مطلوب لإشعارات YouTube |
 | `STREAM_CHECK_INTERVAL_SECONDS` |  | تكرار فحص Kick/TikTok بالثواني (افتراضي 60، حد أدنى 30) |
@@ -127,7 +128,7 @@ lavalink:
 2. **Build Command**: `npm install`
 3. **Start Command**: `npm start`
 4. فعّل **Server Members Intent** و**Message Content Intent** في Discord Developer Portal.
-5. أضف المتغيرات أعلاه في Environment، مع `NODE_VERSION=22.22.2` و`SESSION_SECRET` عشوائي بطول 32 محرفاً على الأقل.
+5. أضف المتغيرات أعلاه في Environment، مع `NODE_VERSION=22.22.2` و`SESSION_SECRET` عشوائي بطول 32 محرفاً على الأقل. لتفعيل الموسيقى أضف `LAVALINK_NODES` كقيمة JSON لعقد Lavalink v4، مثل المثال أعلاه؛ اتركه فارغاً لتعطيل الموسيقى فقط مع استمرار تشغيل البوت والداشبورد.
 6. بعد النشر ضع رابط الخدمة في `BASE_URL`، وأضف `<BASE_URL>/callback` في Discord Redirects.
 7. لمنع النوم: أضف Monitor في UptimeRobot على `<BASE_URL>/health` كل 5 دقائق.
 

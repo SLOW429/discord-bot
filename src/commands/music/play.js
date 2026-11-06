@@ -42,6 +42,9 @@ function playbackErrorMessage(query, error) {
   if (/youtube\.com|youtu\.be/i.test(query)) {
     return '⚠️ تعذر تشغيل رابط YouTube؛ قد يرفض المصدر الطلب أو يتطلب تحققاً. لن يعيد البوت المحاولة عبر وسائل بديلة لتجاوز القيود؛ جرّب مصدراً مرخصاً آخر.';
   }
+  if (/Lavalink is not configured/i.test(error.message || '')) {
+    return '⚠️ الموسيقى غير مفعّلة بعد. على مالك البوت ضبط LAVALINK_NODES في متغيرات البيئة.';
+  }
   if (/Lavalink is not connected/i.test(error.message || '')) {
     return '⚠️ خدمة Lavalink غير متصلة حالياً. يرجى المحاولة لاحقاً أو التواصل مع إدارة البوت.';
   }

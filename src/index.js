@@ -9,7 +9,7 @@ const startDashboard = require('./dashboard/server');
 (async () => {
   const required = [
     'DISCORD_TOKEN', 'MONGODB_URI', 'SESSION_SECRET', 'BASE_URL',
-    'CLIENT_ID', 'CLIENT_SECRET', 'LAVALINK_NODES'
+    'CLIENT_ID', 'CLIENT_SECRET'
   ];
   const missing = required.filter(name => !process.env[name]);
   if (missing.length) throw new Error(`Missing required environment variables: ${missing.join(', ')}`);

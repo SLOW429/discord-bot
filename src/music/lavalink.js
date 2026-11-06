@@ -30,9 +30,10 @@ const FILTERS = {
 };
 
 function parseNodes() {
+  if (!process.env.LAVALINK_NODES?.trim()) return null;
   let nodes;
   try {
-    nodes = JSON.parse(process.env.LAVALINK_NODES || '');
+    nodes = JSON.parse(process.env.LAVALINK_NODES);
   } catch (error) {
     throw new Error('LAVALINK_NODES must be a valid JSON array of Lavalink node definitions.', { cause: error });
   }
@@ -104,6 +105,28 @@ function notify(state, content) {
 
 function setupMusic(client) {
   const nodes = parseNodes();
+  if (!nodes) {
+    const unavailable = async () => {
+      throw new Error('Lavalink is not configured. Set LAVALINK_NODES to enable music playback.');
+    };
+    console.warn('[music] LAVALINK_NODES is not set; music playback is disabled. The bot and dashboard will continue starting.');
+    client.music = {
+      enabled: false,
+      shoukaku: null,
+      ready: new Promise(() => {}),
+      getQueue: () => null,
+      play: unavailable,
+      skip: unavailable,
+      stop: unavailable,
+      setPaused: unavailable,
+      setVolume: unavailable,
+      setRepeatMode: unavailable,
+      setFilter: unavailable,
+      restoreQueues: async () => {}
+    };
+    return client.music;
+  }
+
   const shoukaku = new Shoukaku(
     new Connectors.DiscordJS(client),
     nodes,
@@ -509,6 +532,7 @@ function setupMusic(client) {
   }
 
   client.music = {
+    enabled: true,
     shoukaku,
     ready,
     getQueue,
