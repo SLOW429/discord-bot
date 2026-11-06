@@ -2,56 +2,51 @@ const { SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder().setName('play').setDescription('تشغيل أغنية (اسم / YouTube / Spotify)').setDMPermission(false)
-    .addStringOption(o => o.setName('query').setDescription('الاسم أو الرابط').setRequired(true)),
+    .addStringOption(o => o.setName('query').setDescription('الاسم أو الرابط').setMaxLength(500).setRequired(true)),
   async execute(i, client) {
     const vc = i.member.voice.channel;
     if (!vc) return i.reply({ content: 'ادخل روم صوتي أولاً.', flags: 64 });
+    const query = i.options.getString('query').trim();
+    if (!query) return i.reply({ content: 'أدخل اسم مقطع أو رابطاً صالحاً.', flags: 64 });
     const queue = client.distube.getQueue(i.guildId);
     if (queue?.songs.length >= 100)
       return i.reply({ content: 'وصلت قائمة التشغيل إلى الحد الأقصى وهو 100 مقطع.', flags: 64 });
     await i.deferReply();
-    const query = i.options.getString('query').trim();
     const options = { member: i.member, textChannel: i.channel };
     try {
       await client.distube.play(vc, query, options);
       await i.editReply('🎶 جاري تجهيز المقطع. ستظهر رسالة عند بدء التشغيل.');
     } catch (error) {
-      const fallbackQuery = youtubeFallbackQuery(query);
-      if (fallbackQuery && client.ytDlpPlugin) {
-        try {
-          const song = await client.ytDlpPlugin.resolve(fallbackQuery, { member: i.member });
-          await client.distube.play(vc, song, options);
-          await i.editReply('🎶 تم تجهيز المقطع باستخدام extractor بديل.');
-          return;
-        } catch (fallbackError) {
-          console.error(`[music] /play and yt-dlp fallback failed in guild ${i.guildId}:`, {
-            primary: error,
-            fallback: fallbackError
-          });
-          const details = `${error.message || ''} ${fallbackError.message || ''}`;
-          const blocked = /sign in|not a bot|bot detection|confirm you're not|403|private video/i.test(details);
-          await i.editReply(blocked
-            ? '⚠️ رفض YouTube الطلب أو يتطلب تسجيل الدخول/التحقق. جرّب مصدراً آخر؛ لا يتجاوز البوت قيود المنصة.'
-            : '⚠️ تعذر تشغيل الطلب عبر المصدر الأساسي والبديل. تحقق من yt-dlp وPython واتصال الصوت ثم أعد المحاولة.');
-          return;
-        }
-      }
-
       console.error(`[music] /play failed in guild ${i.guildId}:`, error);
-      await i.editReply('⚠️ تعذر تشغيل هذا الطلب. تحقق من الرابط واتصال الصوت ثم أعد المحاولة.');
+      await i.editReply(playbackErrorMessage(query, error));
     }
   }
 };
 
-function youtubeFallbackQuery(query) {
-  if (!/^https?:\/\//i.test(query)) return `ytsearch1:${query}`;
+function getSource(query) {
+  if (/^spotify:/i.test(query)) return 'spotify';
   try {
     const url = new URL(query);
     const host = url.hostname.toLowerCase();
-    return host === 'youtu.be' || host === 'youtube.com' || host.endsWith('.youtube.com')
-      ? query
-      : null;
+    if (host === 'open.spotify.com' || host.endsWith('.spotify.com')) return 'spotify';
+    if (host === 'youtu.be' || host === 'youtube.com' || host.endsWith('.youtube.com')) return 'youtube';
   } catch {
-    return null;
+    return 'search';
   }
+  return 'other';
+}
+
+function playbackErrorMessage(query, error) {
+  const details = `${error?.message || ''} ${error?.errorCode || ''}`;
+  if (getSource(query) === 'spotify') {
+    return '⚠️ تعذر حل رابط Spotify إلى مقطع قابل للتشغيل. تحقق من أن الرابط عام وأن المقطع متاح. رابط Spotify يوفر بيانات المسار، وليس تدفقاً صوتياً.';
+  }
+  if (/sign in|not a bot|bot detection|confirm you're not|authentication required/i.test(details)
+    || (getSource(query) === 'youtube' && /403|forbidden/i.test(details))) {
+    return '⚠️ رفض YouTube هذا الطلب أو يتطلب تسجيل الدخول/التحقق. لا يحاول البوت تجاوز هذه القيود؛ جرّب مصدراً مرخصاً آخر أو ملفاً تملك حق بثه.';
+  }
+  if (getSource(query) === 'youtube') {
+    return '⚠️ تعذر تشغيل رابط YouTube. تحقق من أن الفيديو عام وقابل للتشغيل، أو جرّب مصدراً مرخصاً آخر.';
+  }
+  return '⚠️ تعذر تشغيل هذا الطلب. تحقق من الاسم أو الرابط واتصال الصوت ثم أعد المحاولة.';
 }

@@ -7,13 +7,22 @@ const { persistQueue, clearPersistedQueue } = require('../utils/musicQueue');
 
 // يربط DisTube بالبوت ويضيفه على client.distube
 module.exports = function setupMusic(client) {
+  const spotifyClientId = process.env.SPOTIFY_CLIENT_ID;
+  const spotifyClientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+  if (Boolean(spotifyClientId) !== Boolean(spotifyClientSecret)) {
+    throw new Error('SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET must be configured together.');
+  }
+
   client.ytDlpPlugin = new YtDlpPlugin({ update: true });
+  const spotifyPlugin = spotifyClientId
+    ? new SpotifyPlugin({ api: { clientId: spotifyClientId, clientSecret: spotifyClientSecret } })
+    : new SpotifyPlugin();
+  const youtubePlugin = new YouTubePlugin();
   client.distube = new DisTube(client, {
     ffmpeg: { path: require('ffmpeg-static') },
     emitNewSongOnly: true,
     savePreviousSongs: false,
-    // Keep yt-dlp last as the fallback playable extractor for supported URLs.
-    plugins: [new SpotifyPlugin(), new YouTubePlugin(), client.ytDlpPlugin]
+    plugins: [spotifyPlugin, youtubePlugin, client.ytDlpPlugin]
   });
 
   const embed = (title, song) => new EmbedBuilder().setColor(0x1db954).setTitle(title)
