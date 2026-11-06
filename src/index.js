@@ -3,11 +3,14 @@ const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const connectDB = require('./config/database');
 const loadCommands = require('./handlers/commandHandler');
 const loadEvents = require('./handlers/eventHandler');
-const setupMusic = require('./music/distube');
+const setupMusic = require('./music/lavalink');
 const startDashboard = require('./dashboard/server');
 
 (async () => {
-  const required = ['DISCORD_TOKEN', 'MONGODB_URI', 'SESSION_SECRET', 'BASE_URL', 'CLIENT_ID', 'CLIENT_SECRET'];
+  const required = [
+    'DISCORD_TOKEN', 'MONGODB_URI', 'SESSION_SECRET', 'BASE_URL',
+    'CLIENT_ID', 'CLIENT_SECRET', 'LAVALINK_NODES'
+  ];
   const missing = required.filter(name => !process.env[name]);
   if (missing.length) throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   if (process.env.SESSION_SECRET.length < 32)

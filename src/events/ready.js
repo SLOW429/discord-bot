@@ -10,7 +10,9 @@ module.exports = {
     console.log(`Logged in as ${client.user.tag}`);
     // تسجيل أوامر السلاش عالمياً (قد يستغرق ظهورها حتى ساعة أول مرة)
     await client.application.commands.set(client.commands.map(c => c.data.toJSON()));
-    await restoreMusicQueues(client);
+    client.music.ready
+      .then(() => restoreMusicQueues(client))
+      .catch(error => console.error('[music] Could not restore saved Lavalink queues:', error));
     startStreamChecker(client);
   }
 };

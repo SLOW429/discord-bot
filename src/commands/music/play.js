@@ -1,52 +1,52 @@
 const { SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
-  data: new SlashCommandBuilder().setName('play').setDescription('تشغيل أغنية (اسم / YouTube / Spotify)').setDMPermission(false)
-    .addStringOption(o => o.setName('query').setDescription('الاسم أو الرابط').setMaxLength(500).setRequired(true)),
-  async execute(i, client) {
-    const vc = i.member.voice.channel;
-    if (!vc) return i.reply({ content: 'ادخل روم صوتي أولاً.', flags: 64 });
-    const query = i.options.getString('query').trim();
-    if (!query) return i.reply({ content: 'أدخل اسم مقطع أو رابطاً صالحاً.', flags: 64 });
-    const queue = client.distube.getQueue(i.guildId);
-    if (queue?.songs.length >= 100)
-      return i.reply({ content: 'وصلت قائمة التشغيل إلى الحد الأقصى وهو 100 مقطع.', flags: 64 });
-    await i.deferReply();
-    const options = { member: i.member, textChannel: i.channel };
+  data: new SlashCommandBuilder()
+    .setName('play')
+    .setDescription('تشغيل مقطع من مصدر صوت مدعوم')
+    .setDMPermission(false)
+    .addStringOption(option => option
+      .setName('query')
+      .setDescription('اسم المقطع أو رابط المصدر')
+      .setMaxLength(500)
+      .setRequired(true)),
+  async execute(interaction, client) {
+    const voiceChannel = interaction.member.voice.channel;
+    if (!voiceChannel) {
+      return interaction.reply({ content: 'ادخل روم صوتي أولاً.', flags: 64 });
+    }
+
+    const query = interaction.options.getString('query').trim();
+    if (!query) return interaction.reply({ content: 'أدخل اسم مقطع أو رابطاً صالحاً.', flags: 64 });
+
+    const queue = client.music.getQueue(interaction.guildId);
+    if (queue && queue.songs.length >= 100) {
+      return interaction.reply({ content: 'وصلت قائمة التشغيل إلى الحد الأقصى وهو 100 مقطع.', flags: 64 });
+    }
+
+    await interaction.deferReply();
     try {
-      await client.distube.play(vc, query, options);
-      await i.editReply('🎶 جاري تجهيز المقطع. ستظهر رسالة عند بدء التشغيل.');
+      await client.music.play(voiceChannel, interaction.channel, query);
+      await interaction.editReply('🎶 تمت معالجة طلبك بواسطة Lavalink.');
     } catch (error) {
-      console.error(`[music] /play failed in guild ${i.guildId}:`, error);
-      await i.editReply(playbackErrorMessage(query, error));
+      console.error(`[music] /play failed in guild ${interaction.guildId}:`, error);
+      await interaction.editReply(playbackErrorMessage(query, error));
     }
   }
 };
 
-function getSource(query) {
-  if (/^spotify:/i.test(query)) return 'spotify';
-  try {
-    const url = new URL(query);
-    const host = url.hostname.toLowerCase();
-    if (host === 'open.spotify.com' || host.endsWith('.spotify.com')) return 'spotify';
-    if (host === 'youtu.be' || host === 'youtube.com' || host.endsWith('.youtube.com')) return 'youtube';
-  } catch {
-    return 'search';
-  }
-  return 'other';
-}
-
 function playbackErrorMessage(query, error) {
-  const details = `${error?.message || ''} ${error?.errorCode || ''}`;
-  if (getSource(query) === 'spotify') {
-    return '⚠️ تعذر حل رابط Spotify إلى مقطع قابل للتشغيل. تحقق من أن الرابط عام وأن المقطع متاح. رابط Spotify يوفر بيانات المسار، وليس تدفقاً صوتياً.';
+  if (/spotify:/i.test(query) || /spotify\.com/i.test(query)) {
+    return '⚠️ رابط Spotify يوفر بيانات الكتالوج وليس تدفقاً صوتياً. شغّل الصوت من مصدر لديك صلاحية بثه.';
   }
-  if (/sign in|not a bot|bot detection|confirm you're not|authentication required/i.test(details)
-    || (getSource(query) === 'youtube' && /403|forbidden/i.test(details))) {
-    return '⚠️ رفض YouTube هذا الطلب أو يتطلب تسجيل الدخول/التحقق. لا يحاول البوت تجاوز هذه القيود؛ جرّب مصدراً مرخصاً آخر أو ملفاً تملك حق بثه.';
+  if (/youtube\.com|youtu\.be/i.test(query)) {
+    return '⚠️ تعذر تشغيل رابط YouTube؛ قد يرفض المصدر الطلب أو يتطلب تحققاً. لن يعيد البوت المحاولة عبر وسائل بديلة لتجاوز القيود؛ جرّب مصدراً مرخصاً آخر.';
   }
-  if (getSource(query) === 'youtube') {
-    return '⚠️ تعذر تشغيل رابط YouTube. تحقق من أن الفيديو عام وقابل للتشغيل، أو جرّب مصدراً مرخصاً آخر.';
+  if (/Lavalink is not connected/i.test(error.message || '')) {
+    return '⚠️ خدمة Lavalink غير متصلة حالياً. يرجى المحاولة لاحقاً أو التواصل مع إدارة البوت.';
   }
-  return '⚠️ تعذر تشغيل هذا الطلب. تحقق من الاسم أو الرابط واتصال الصوت ثم أعد المحاولة.';
+  if (/queue can hold at most/i.test(error.message || '')) {
+    return '⚠️ وصلت قائمة التشغيل إلى الحد الأقصى وهو 100 مقطع.';
+  }
+  return '⚠️ تعذر تشغيل الطلب من مصدر متاح. تحقق من الرابط أو جرّب مصدراً صوتياً آخر.';
 }

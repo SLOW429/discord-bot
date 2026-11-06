@@ -10,12 +10,11 @@ const Guild = require('../models/Guild');
 const GuildAnalytics = require('../models/GuildAnalytics');
 const Warn = require('../models/Warn');
 const { getGuild, invalidate } = require('../utils/getGuild');
-const { persistQueue } = require('../utils/musicQueue');
 const modLog = require('../utils/modLog');
 
 const DISCORD = 'https://discord.com/api/v10';
 const PLATFORMS = ['kick', 'youtube', 'tiktok'];
-const AUDIO_FILTERS = new Set(['bassboost', 'nightcore', '3d', 'echo', 'karaoke', 'vaporwave']);
+const AUDIO_FILTERS = new Set(['bassboost', 'nightcore', '3d', 'karaoke', 'vaporwave']);
 const asyncHandler = handler => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 const guildPermissionCache = new Map();
 const GUILD_PERMISSION_TTL = 30_000;
@@ -154,7 +153,7 @@ module.exports = function startDashboard(client) {
   app.get('/dashboard/:guildId', requireLogin, guildAccess, asyncHandler(async (req, res) => {
     const { guild } = req;
     const settings = await getGuild(guild.id);
-    const queue = client.distube.getQueue(guild.id);
+    const queue = client.music.getQueue(guild.id);
     const analyticsDays = Array.from({ length: 7 }, (_, index) => {
       const date = new Date();
       date.setUTCHours(0, 0, 0, 0);
@@ -323,14 +322,14 @@ module.exports = function startDashboard(client) {
   }));
 
   app.get('/dashboard/:guildId/music/state', requireLogin, guildAccess, (req, res) => {
-    const queue = client.distube.getQueue(req.guild.id);
+    const queue = client.music.getQueue(req.guild.id);
     if (!queue) return res.json({ playing: false, songs: [] });
     res.json({
       playing: true,
       paused: queue.paused,
       volume: queue.volume,
       repeatMode: queue.repeatMode,
-      filters: queue.filters?.collection ? [...queue.filters.collection.keys()] : [],
+      filters: queue.filters,
       songs: queue.songs.slice(0, 10).map(song => ({
         name: song.name,
         url: song.url,
@@ -340,39 +339,38 @@ module.exports = function startDashboard(client) {
   });
 
   app.post('/dashboard/:guildId/music/:action', requireLogin, guildAccess, asyncHandler(async (req, res) => {
-    const queue = client.distube.getQueue(req.guild.id);
+    const queue = client.music.getQueue(req.guild.id);
     if (!queue) return res.status(409).json({ error: 'لا يوجد تشغيل حالياً.' });
     switch (req.params.action) {
       case 'pause':
-        if (!queue.paused) await queue.pause();
+        if (!queue.paused) await client.music.setPaused(req.guild.id, true);
         break;
       case 'resume':
-        if (queue.paused) await queue.resume();
+        if (queue.paused) await client.music.setPaused(req.guild.id, false);
         break;
       case 'skip':
-        await queue.skip();
+        await client.music.skip(req.guild.id);
         break;
       case 'stop':
-        await queue.stop();
+        await client.music.stop(req.guild.id);
         break;
       case 'volume': {
         const volume = Number(req.body.volume);
         if (!Number.isInteger(volume) || volume < 0 || volume > 100)
           return res.status(400).json({ error: 'مستوى الصوت يجب أن يكون بين 0 و100.' });
-        await queue.setVolume(volume);
+        await client.music.setVolume(req.guild.id, volume);
         break;
       }
       case 'filter': {
         const filter = String(req.body.filter || '');
         if (filter !== 'off' && !AUDIO_FILTERS.has(filter))
           return res.status(400).json({ error: 'مؤثر صوت غير مدعوم.' });
-        await queue.filters.set(filter === 'off' ? [] : [filter]);
+        await client.music.setFilter(req.guild.id, filter);
         break;
       }
       default:
         return res.status(404).json({ error: 'إجراء غير معروف.' });
     }
-    await persistQueue(queue);
     res.json({ ok: true });
   }));
 

@@ -9,3 +9,5 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 22.22.2
+      - key: LAVALINK_NODES
+        sync: false

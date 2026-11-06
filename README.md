@@ -10,7 +10,7 @@
 |  الإدارة | `ban` `kick` `timeout` `clear` `warn` + Anti-Spam و Anti-Raid ومرشحات الروابط والإشارات + رصد الحظر/حذف القنوات الجماعي |
 |  الاقتصاد والتقدم | `balance` `bank` `daily` `coinflip` `top` `rank` `8ball` مع المحفظة والبنك والتحويل والعمل وخبرة الرسائل |
 |  الدعم | `/tickets` لإعداد لوحة تذاكر خاصة مع رتبة دعم وسجل نصي عند الإغلاق |
-|  الموسيقى | `play` و `music` (skip / stop / pause / resume / queue / loop / volume / filter) مع حفظ القائمة، إضافة YouTube محدثة وyt-dlp كبديل |
+|  الموسيقى | `/play` و`/music` عبر Lavalink/Shoukaku (skip / stop / pause / resume / queue / loop / volume / filter) مع حفظ القائمة واتصال صوتي مستقر |
 |  إشعارات البث | متابعة حسابات **Kick** و **YouTube** و **TikTok** وإرسال إشعار تلقائي عند بدء البث |
 |  الترحيب | رسائل دخول ومغادرة مضمّنة، صورة HTTPS اختيارية، ورتبة تلقائية |
 |  الداشبورد | OAuth2، إعدادات مستقلة لكل سيرفر، تحكم موسيقى مباشر، وإحصاءات نشاط |
@@ -40,7 +40,7 @@ src/
 ├── commands/              moderation / economy / music
 ├── events/                ready, interactionCreate, messageCreate, guild members, audit events
 ├── handlers/              تحميل الأوامر والأحداث تلقائياً
-├── music/distube.js       إعداد DisTube
+├── music/lavalink.js      إدارة عقد Lavalink والطوابير ومشغلات الصوت
 ├── services/              streamChecker + kick / youtube / tiktok
 ├── utils/                 getGuild (كاش), modLog, economy, analytics
 └── dashboard/             server.js + views (EJS) + public
@@ -48,7 +48,7 @@ src/
 
 ## 🚀 التشغيل المحلي
 
-المتطلبات: **Node.js 22.22.2 أو أحدث بإصدار مدعوم من إضافات YouTube**، وPython متاح للنظام بسبب `@distube/yt-dlp`، وحساب MongoDB Atlas.
+المتطلبات: Node.js ضمن الإصدارات في `package.json`، وخادم Lavalink v4 متاح عبر الشبكة، وحساب MongoDB Atlas. Render يشغّل البوت والداشبورد لكنه لا يشغّل Lavalink؛ استخدم خادماً منفصلاً أو مزود Lavalink موثوقاً.
 
 ```bash
 npm install
@@ -56,6 +56,37 @@ cp .env.example .env     # على Windows: copy .env.example .env
 # املأ القيم في .env
 npm start
 ```
+
+عيّن `LAVALINK_NODES` إلى مصفوفة JSON لعقد Lavalink، مثلاً:
+
+```json
+[{"name":"main","url":"lavalink.example.net:443","auth":"your-node-password","secure":true}]
+```
+
+`url` هو `host:port` من دون `http://` أو `https://`، و`secure` يحدد استخدام TLS. أضف عقداً أخرى إلى المصفوفة لاستخدام pool. فعّل في إعداد Lavalink فقط مصادر الصوت التي تملك حق استخدامها، واضبط إعدادات Lavalink الإضافية وفق توثيقه الرسمي. يجب أن يطابق عنوان العقدة وكلمة مرورها إعداد خادم Lavalink.
+
+مثال أساسي لخادم Lavalink v4 (`application.yml`):
+
+```yaml
+server:
+  port: 2333
+  address: 0.0.0.0
+lavalink:
+  server:
+    password: "replace-with-a-long-random-password"
+    sources:
+      youtube: false
+      bandcamp: true
+      soundcloud: true
+      twitch: true
+      vimeo: true
+      http: false
+      local: false
+    youtubeSearchEnabled: false
+    soundcloudSearchEnabled: true
+```
+
+لا تعرّض منفذ العقدة مباشرةً للإنترنت دون TLS وتقييد الوصول. وثائق التشغيل والإعداد: [Lavalink Getting Started](https://lavalink.dev/getting-started/) و[Config File](https://lavalink.dev/configuration/config/file/)، و[Shoukaku Getting Started](https://guide.shoukaku.shipgirl.moe/guides/1-getting-started/).
 
 للتجربة المحلية اجعل `BASE_URL=http://localhost:3000` وأضف
 `http://localhost:3000/callback` في Discord Developer Portal ← OAuth2 ← Redirects.
@@ -114,12 +145,11 @@ npm start
 
 ##  ملاحظات
 
-- يبدأ تشغيل الموسيقى عبر `/play` من روم صوتي. الداشبورد يتحكم في القائمة النشطة (توقف/استئناف/تخطي/صوت/مؤثرات) ولا ينشئ اتصالاً صوتياً من تلقاء نفسه.
-- تُحفظ قائمة التشغيل الحالية (حتى 100 مقطع)، مع مستوى الصوت والتكرار والفلاتر، في MongoDB وتُستعاد بعد إعادة تشغيل البوت إذا بقيت القنوات متاحة. الاستعادة تتطلب بقاء الروابط قابلة للتشغيل؛ يبدأ المقطع الحالي من بدايته وقد تنتهي روابط البث المؤقتة.
-- تستخدم الموسيقى إضافتي YouTube وSpotify المحدثتين، مع `yt-dlp` للمصادر التي يدعمها. يتطلب `@distube/youtube` إصدار Node مدعوماً من نطاق `engines` في `package.json`. `yt-dlp` يتطلب Python. قد ترفض YouTube بعض الطلبات أو تتطلب تسجيل الدخول؛ البوت لا يتجاوز هذه القيود ولا يعيد محاولة الروابط المحجوبة عبر extractor آخر. يمكن ضبط `SPOTIFY_CLIENT_ID` و`SPOTIFY_CLIENT_SECRET` اختيارياً لتحسين جلب بيانات روابط Spotify؛ يجب ضبطهما معاً. Spotify يوفر بيانات المسار فقط، ولا يقدم رابطاً صوتياً مباشراً أو يضمن توفر مصدر تشغيل.
+- يبدأ تشغيل الموسيقى عبر `/play` من روم صوتي. يستخدم Shoukaku عقد Lavalink، ويدعم البحث الافتراضي عبر SoundCloud (`scsearch:`) وروابط Bandcamp وSoundCloud وTwitch وVimeo. الداشبورد يتحكم في قائمة التشغيل النشطة.
+- تُحفظ حتى 100 مقطع مشفر من Lavalink، مع مستوى الصوت والتكرار والفلاتر، في MongoDB وتُستعاد بعد إعادة تشغيل البوت إذا بقيت العقد والقنوات متاحة. يبدأ المقطع الحالي من بدايته عند الاستعادة، وقد لا تبقى روابط البث المؤقتة صالحة.
+- لا يشغّل هذا النظام روابط YouTube ولا يحاول تجاوز متطلبات تسجيل الدخول أو كشف البوتات. كما لا يحوّل روابط Spotify إلى مصدر آخر؛ Spotify رابط بيانات وليس تدفقاً صوتياً. استخدم مزوداً مرخصاً أو تدفقاً تملك حق بثه.
 - صورة الترحيب تُقبل كرابط HTTPS؛ لا توجد خدمة خارجية لتوليد الصور تلقائياً.
 - إحصاءات النشاط تُجمع في الذاكرة ثم تُحفظ كل 30 ثانية، وتُحتفظ باليوميات 90 يوماً. قد تفقد آخر دفعة غير محفوظة عند إيقاف قسري.
-- حدّثت إضافة YouTube لإزالة الاعتماد على `@distube/ytdl-core` القديم. يستخدم yt-dlp كـ extractor احتياطي؛ قد تستمر المنصة بحجب بعض طلبات مراكز البيانات، ولا يحاول البوت تجاوز التحقق أو متطلبات تسجيل الدخول. استخدم مصدراً آخر عند رفض YouTube الطلب.
 - يمكن استخدام الإيموجي في ملفات المشروع ورسائل البوت والسجلات والواجهات؛ لا توجد سياسة تمنعها.
 - **Render المجاني** ينام بعد 15 دقيقة بلا زيارات، فاستخدم UptimeRobot.
 - أوامر السلاش قد تتأخر حتى ساعة في الظهور أول مرة بعد التسجيل العالمي.

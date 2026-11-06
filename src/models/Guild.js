@@ -64,8 +64,12 @@ const guildSchema = new Schema({
     textChannelId: String,
     songs: {
       type: [{
-        url: { type: String, required: true },
-        name: { type: String, required: true }
+        encoded: String,
+        url: String,
+        name: { type: String, required: true },
+        author: String,
+        length: Number,
+        isStream: Boolean
       }],
       default: []
     },
