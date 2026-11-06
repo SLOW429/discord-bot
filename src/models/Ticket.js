@@ -6,6 +6,7 @@ const ticketSchema = new Schema({
   channelId: String,
   status: { type: String, enum: ['open', 'closed'], default: 'open' },
   closing: { type: Boolean, default: false },
+  transcriptArchivedAt: Date,
   closedBy: String,
   closedAt: Date
 }, { timestamps: true });

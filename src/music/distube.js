@@ -7,12 +7,13 @@ const { persistQueue, clearPersistedQueue } = require('../utils/musicQueue');
 
 // يربط DisTube بالبوت ويضيفه على client.distube
 module.exports = function setupMusic(client) {
+  client.ytDlpPlugin = new YtDlpPlugin({ update: true });
   client.distube = new DisTube(client, {
     ffmpeg: { path: require('ffmpeg-static') },
     emitNewSongOnly: true,
     savePreviousSongs: false,
-    // yt-dlp covers SoundCloud and live URLs supported by its extractors; Spotify resolves to playable tracks.
-    plugins: [new SpotifyPlugin(), new YouTubePlugin(), new YtDlpPlugin()]
+    // Keep yt-dlp last as the fallback playable extractor for supported URLs.
+    plugins: [new SpotifyPlugin(), new YouTubePlugin(), client.ytDlpPlugin]
   });
 
   const embed = (title, song) => new EmbedBuilder().setColor(0x1db954).setTitle(title)

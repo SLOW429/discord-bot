@@ -37,18 +37,21 @@ async function getToken() {
 
 module.exports = async function checkKick(username) {
   const accessToken = await getToken();
+  const slug = username.trim().replace(/^@/, '');
   const response = await fetch(
-    `https://api.kick.com/public/v1/channels?slug=${encodeURIComponent(username)}`,
+    `https://api.kick.com/public/v1/channels?slug=${encodeURIComponent(slug)}`,
     {
       headers: { Authorization: `Bearer ${accessToken}` },
       signal: AbortSignal.timeout(10_000)
     }
   );
   if (!response.ok) throw new Error(`Kick API request failed: HTTP ${response.status}`);
-  const channel = (await response.json()).data?.[0];
+  const result = await response.json();
+  if (!Array.isArray(result.data)) throw new Error('Kick returned an invalid channel response');
+  const channel = result.data[0];
   if (!channel) return { isLive: false };
   return {
-    isLive: !!channel.stream?.is_live,
+    isLive: channel.stream?.is_live === true,
     title: channel.stream_title,
     url: `https://kick.com/${channel.slug}`,
     thumbnail: channel.stream?.thumbnail

@@ -24,22 +24,22 @@ async function createTicket(interaction) {
     });
   if (!ticket) {
     const existing = await Ticket.findOne({ guildId: guild.id, userId: interaction.user.id, status: 'open' }).lean();
-      let channel = existing?.channelId && guild.channels.cache.get(existing.channelId);
-      if (existing?.channelId && !channel) {
-        channel = await guild.channels.fetch(existing.channelId).catch(error => {
-          if (error.code === 10003) return null;
-          throw error;
-        });
-      }
-      if (existing?.createdAt && !channel && Date.now() - existing.createdAt.getTime() > 2 * 60_000) {
-        const removed = await Ticket.deleteOne({
-          _id: existing._id,
-          status: 'open',
-          closing: { $ne: true }
-        });
-        if (removed.deletedCount) return createTicket(interaction);
-      }
-      return interaction.reply({
+    let channel = existing?.channelId && guild.channels.cache.get(existing.channelId);
+    if (existing?.channelId && !channel) {
+      channel = await guild.channels.fetch(existing.channelId).catch(error => {
+        if (error.code === 10003) return null;
+        throw error;
+      });
+    }
+    if (existing?.createdAt && !channel && Date.now() - existing.createdAt.getTime() > 2 * 60_000) {
+      const removed = await Ticket.deleteOne({
+        _id: existing._id,
+        status: 'open',
+        closing: { $ne: true }
+      });
+      if (removed.deletedCount) return createTicket(interaction);
+    }
+    return interaction.reply({
       content: channel ? `لديك تذكرة مفتوحة: ${channel}` : 'لديك بالفعل طلب تذكرة قيد المعالجة.',
       flags: 64
     });
@@ -111,46 +111,83 @@ async function closeTicket(interaction) {
   if (!ticket) return interaction.reply({ content: 'جارٍ إغلاق هذه التذكرة بالفعل.', flags: 64 });
 
   await interaction.deferReply({ flags: 64 });
-  let ticketFinalized = false;
+  let closed = false;
   try {
-    const messages = await interaction.channel.messages.fetch({ limit: 100 });
-    const transcript = [...messages.values()].reverse().map(message => {
-      const text = message.content.replace(/\r?\n/g, ' ').slice(0, 2000);
-      const attachments = [...message.attachments.values()].map(item => item.url).join(' ');
-      return `[${message.createdAt.toISOString()}] ${message.author.tag}: ${text}${attachments ? ` ${attachments}` : ''}`;
-    }).join('\n');
-    const logChannel = settings.ticketing?.logChannelId
-      ? interaction.guild.channels.cache.get(settings.ticketing.logChannelId)
-      : null;
-    if (!logChannel?.isTextBased()) throw new Error('Configured ticket log channel is unavailable');
-    const file = new AttachmentBuilder(Buffer.from(transcript || 'No messages recorded.', 'utf8'), {
-      name: `ticket-${ticket._id}.txt`
-    });
-    await logChannel.send({
-      content: `Ticket closed by <@${interaction.user.id}>. Opener: <@${ticket.userId}>. Channel: ${interaction.channel.name}`,
-      files: [file],
-      allowedMentions: { users: [interaction.user.id, ticket.userId] }
-    });
+    const botMember = interaction.guild.members.me || await interaction.guild.members.fetchMe();
+    const botPermissions = interaction.channel.permissionsFor(botMember);
+    if (!botPermissions?.has(PermissionFlagsBits.Administrator)
+      && !botPermissions?.has(PermissionFlagsBits.ManageChannels)) {
+      await Ticket.updateOne({ _id: ticket._id, status: 'open' }, {
+        $set: { closing: false },
+        $unset: { closedBy: 1 }
+      });
+      return interaction.editReply('🔒 لا أستطيع إغلاق القناة: امنح البوت Administrator أو Manage Channels في السيرفر.');
+    }
+
+    if (!ticket.transcriptArchivedAt) {
+      const messages = await interaction.channel.messages.fetch({ limit: 100 });
+      const transcript = [...messages.values()].reverse().map(message => {
+        const text = message.content.replace(/\r?\n/g, ' ').slice(0, 2000);
+        const attachments = [...message.attachments.values()].map(item => item.url).join(' ');
+        return `[${message.createdAt.toISOString()}] ${message.author.tag}: ${text}${attachments ? ` ${attachments}` : ''}`;
+      }).join('\n');
+      const logChannel = settings.ticketing?.logChannelId
+        ? await interaction.guild.channels.fetch(settings.ticketing.logChannelId).catch(() => null)
+        : null;
+      if (!logChannel?.isTextBased() || logChannel.id === interaction.channelId)
+        throw new Error('Configured ticket transcript channel is unavailable or points to the ticket itself');
+      const file = new AttachmentBuilder(Buffer.from(transcript || 'No messages recorded.', 'utf8'), {
+        name: `ticket-${ticket._id}.txt`
+      });
+      await logChannel.send({
+        content: `Ticket closed by <@${interaction.user.id}>. Opener: <@${ticket.userId}>. Channel: ${interaction.channel.name}`,
+        files: [file],
+        allowedMentions: { users: [interaction.user.id, ticket.userId] }
+      });
+      const archived = await Ticket.updateOne(
+        { _id: ticket._id, status: 'open', closing: true },
+        { $set: { transcriptArchivedAt: new Date() } }
+      );
+      if (!archived.modifiedCount) throw new Error('Ticket state changed while saving transcript state');
+      ticket.transcriptArchivedAt = new Date();
+    }
+
+    let archiveMode = false;
+    try {
+      await interaction.channel.delete(`Ticket closed by ${interaction.user.tag}`);
+    } catch (error) {
+      console.warn(`[tickets] Could not delete channel ${interaction.channelId}; attempting archive:`, error);
+      await interaction.channel.setName(`closed-${interaction.channel.name}`.slice(0, 100));
+      await interaction.channel.permissionOverwrites.edit(ticket.userId, {
+        SendMessages: false,
+        AddReactions: false
+      }, { reason: `Ticket closed by ${interaction.user.tag}` });
+      if (interaction.message) {
+        await interaction.message.edit({ content: 'This ticket is closed and archived.', components: [] })
+          .catch(error => console.error(`[tickets] Could not remove the close button in ${interaction.channelId}:`, error));
+      }
+      archiveMode = true;
+    }
+
     const finalized = await Ticket.updateOne({ _id: ticket._id, status: 'open', closing: true }, {
       $set: { status: 'closed', closing: false, closedAt: new Date() }
     });
     if (!finalized.modifiedCount) throw new Error('Ticket state changed while closing');
-    ticketFinalized = true;
-    await interaction.editReply('تم حفظ سجل التذكرة وإغلاقها.');
-    try {
-      await interaction.channel.delete(`Ticket closed by ${interaction.user.tag}`);
-    } catch (error) {
-      console.error(`[tickets] Transcript archived but channel cleanup failed for ${interaction.channelId}:`, error);
-      await interaction.editReply('تم حفظ السجل وإغلاق التذكرة، لكن تعذر حذف القناة. تحقق من صلاحيات البوت.');
-    }
+    closed = true;
+    await interaction.editReply(archiveMode
+      ? '📁 تم حفظ سجل التذكرة وأرشفة القناة. لم يتم حذف القناة.'
+      : '✅ تم حفظ سجل التذكرة وحذف القناة.');
   } catch (error) {
-    if (!ticketFinalized) {
+    console.error(`[tickets] Could not close ticket ${ticket._id} in channel ${interaction.channelId}:`, error);
+    if (!closed) {
       await Ticket.updateOne({ _id: ticket._id, status: 'open' }, {
         $set: { closing: false },
         $unset: { closedBy: 1 }
       });
     }
-    throw error;
+    await interaction.editReply(Number(error.code) === 50013
+      ? '⚠️ تعذر حذف أو أرشفة القناة. تحقق من صلاحية Manage Channels وترتيب رتبة البوت بالنسبة إلى القناة.'
+      : '⚠️ تعذر إغلاق التذكرة. تم الاحتفاظ بالقناة، ويمكن إعادة المحاولة بعد إصلاح الإعدادات.');
   }
 }
 
